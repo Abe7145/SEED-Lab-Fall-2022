@@ -59,7 +59,7 @@ def cv_exercise6():
                 cv2.putText(img, anglePrint, (topRight[0], topRight[1] - 15), cv2.FONT_HERSHEY_SIMPLEX,0.5, (0, 255, 0), 2)
             # show the output image
             cv2.imshow('Image', img)
-        #else:
+        else:
             cv2.imshow('Image', img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
