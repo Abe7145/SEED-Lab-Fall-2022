@@ -52,14 +52,14 @@ def cv_exercise6():
                 # Calculate the angle from camera to the object by using the provided formula
                 ## angle = round( (57/2) * ( (cX - xCoord) / xCoord), 2 )
                  # Use pixel manipulation to determine quadrants, then send the angle corresponding to each quadrant to the arduino
-                if cX > xCoord and cY > yCoord:
+                if cX > xCoord and cY < yCoord:
                     angle = 0
-                elif cX > xCoord and cY < yCoord:
-                    angle = pi / 4
-                elif cX < xCoord and cY < yCoord:
-                    angle = pi / 2
+                elif cX > xCoord and cY > yCoord:
+                    angle = math.pi / 2
                 elif cX < xCoord and cY > yCoord:
-                    angle = pi / 4
+                    angle = math.pi
+                elif cX < xCoord and cY < yCoord:
+                    angle = (3 * math.pi) / 2
                 # Display the ID's and angle 
                 anglePrint = str(angle) + ' degrees'
                 cv2.putText(img, str(markerID), (topLeft[0], topLeft[1] - 15), cv2.FONT_HERSHEY_SIMPLEX,0.5, (0, 255, 0), 2)
