@@ -1,6 +1,5 @@
 # Abraham Sitanggang
-# Mini Project OpenCV Aruco Detection
-
+# Mini Project CV Code
 
 # import the necessary packages
 from picamera.array import PiRGBArray
@@ -11,8 +10,7 @@ import numpy
 import sys
 import math
 
-# 57 degrees
-        
+
 def cv_exercise6():
    # Configure camera to take a video
     cap = cv2.VideoCapture(0)
@@ -24,6 +22,7 @@ def cv_exercise6():
         # Obtain the image pixel size, and find the horizontal (x-coordinate) center
         imgSize = img.shape
         xCoord = (imgSize[1] / 2)
+        yCoord = (imgSize[0] / 2)
         # Import the dictonary of markers, define the parameters, and load values into vars
         arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
         arucoParams = cv2.aruco.DetectorParameters_create()
@@ -49,10 +48,18 @@ def cv_exercise6():
                 # compute and draw the center (x, y)-coordinates of the ArUco marker
                 cX = int((topLeft[0] + bottomRight[0]) / 2.0)
                 cY = int((topLeft[1] + bottomRight[1]) / 2.0)
-                # Use pixel manipulation to determine quadrants, then send the angle corresponding to each quadrant to the arduino
                 cv2.circle(img, (cX, cY), 4, (0, 0, 255), -1)
                 # Calculate the angle from camera to the object by using the provided formula
-                angle = round( (57/2) * ( (cX - xCoord) / xCoord), 2 )
+                ## angle = round( (57/2) * ( (cX - xCoord) / xCoord), 2 )
+                 # Use pixel manipulation to determine quadrants, then send the angle corresponding to each quadrant to the arduino
+                if cX > xCoord and cY > yCoord:
+                    angle = 0
+                elif cX > xCoord and cY < yCoord:
+                    angle = pi / 4
+                elif cX < xCoord and cY < yCoord:
+                    angle = pi / 2
+                elif cX < xCoord and cY > yCoord:
+                    angle = pi / 4
                 # Display the ID's and angle 
                 anglePrint = str(angle) + ' degrees'
                 cv2.putText(img, str(markerID), (topLeft[0], topLeft[1] - 15), cv2.FONT_HERSHEY_SIMPLEX,0.5, (0, 255, 0), 2)
