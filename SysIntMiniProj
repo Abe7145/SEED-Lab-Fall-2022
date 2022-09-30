@@ -1,0 +1,16 @@
+%Python code for pi-
+%take the setpoint that the pi reads from the aruco marker and send it to arduino
+def writeNumber(variableName):
+  bus.write_byte(address, variableName)  % variableName is whatever Austin said the aruco marker number is
+  return -1
+
+writeNum(case) #writes on the LCD screen what case the marker is at
+
+  
+  
+#C code for Arduino
+#get the value that the pi sent to determine which quadrent(only 4 cases) it is in
+void receiveData(int byteCount) {
+  case = wire.read(); #variable case is what quadrent or which of the 4 cases the aruco marker is at
+}
+  
