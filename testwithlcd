@@ -1,0 +1,28 @@
+#!/usr/bin/python
+
+import smbus
+import time
+import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd
+import board
+
+lcd_columns = 16
+lcd_rows = 2
+
+i2c = board.I2C()
+lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
+lcd.clear()
+
+bus = smbus.SMBus(1)
+address = 0x2a
+variableName = 8
+
+while True:
+    bus.write_byte(address,variableName)
+    print("Write",variableName)
+    data = ""
+    data = chr(bus.read_byte(address));
+    print ("Read", data)
+    time.sleep(1);
+    lcd.message = "Hello\n"
+
+
