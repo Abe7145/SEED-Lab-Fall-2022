@@ -1,2 +1,2 @@
-# SEED-Lab-Project
+# SEED Lab Repository for the SEEDSters
 It's SEEDin' time!
