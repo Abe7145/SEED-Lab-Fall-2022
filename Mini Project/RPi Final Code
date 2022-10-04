@@ -1,1 +1,134 @@
+# SEEDsters' Mini Project RPi Code
+# 10/3/22
 
+# import the necessary packages
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import time
+import cv2
+import numpy
+import sys
+import math
+import smbus
+import smbus2
+import board
+import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd
+
+# General Objective: Take the setpoint that the pi camera reads from the aruco marker, send info to arduino, receive info from arduino, print to LCD
+
+# Defining/initializing LCD parameters
+lcd_columns = 16
+lcd_rows = 2
+i2c = board.I2C()
+lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
+lcd.clear()
+
+# Defining/initializing I2C parameters
+abus = smbus.SMBus(1)
+address = 0x2a
+slave_address = 0x00
+
+# Globalization of variables
+angle = 0
+data = 0
+
+# Function that takes in a quadrant from CV processing, then writes/read to/from the Arduino, and returns nothing
+def writeNumber(variableName):
+    try:
+        # Writes the quadrant from CV processing, then sends it through pre-defined I2C address
+        abus.write_byte(address,variableName) 
+    except:
+        # If communication is disrupted, program displays error message
+        print('io error') 
+    try:
+        # RPi seems to more easily read characters from the Arduino, so we pre-define string variable
+        data = ""             
+        # Since the angle will be transmitted within 3 char. (0 - 360 deg), we loop through that amount of char.
+        for i in range(0,3):                        
+            # Reads the characters (angle values) and concatenates to 'data' string which is our current position
+            data += chr(abus.read_byte(address));   
+        #print(data)
+        #print('\n')
+    except:
+        print('io error')
+    tpos = ''
+    # Basically a case/switch statement that translates the quadrants into the target degree of the wheel
+    if ( variableName == 0 ):
+        tpos = '00'
+    elif ( variableName == 1 ):
+        tpos = '090'
+    elif ( variableName == 2 ):
+        tpos = '180'
+    elif ( variableName == 3 ):
+        tpos = '270'
+    lcd.message = 'Cpos: ' + str(data) + '\nTpos: ' + str(tpos) # Prints the current position and target position to the LCD 
+    return -1
+
+# Main function that performs all the CV techniques and then calls the I2C/LED function to transmit/recieve data
+
+# Configure camera to take a video
+cap = cv2.VideoCapture(0)  
+# Continuously detect Aruco markers transmit/recieve data until user hits 'q' 
+while(True):      
+    # Capture frame-by-frame
+    ret, frame = cap.read()          
+    # Convert to gray scale
+    img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
+    # Obtain the image pixel size, and find the center of the image
+    imgSize = img.shape
+    xCoord = (imgSize[1] / 2)
+    yCoord = (imgSize[0] / 2)
+    # Import the dictonary of markers, define the parameters, and load values into vars
+    arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
+    arucoParams = cv2.aruco.DetectorParameters_create()
+    (corners, ids, rejected) = cv2.aruco.detectMarkers(img, arucoDict, parameters=arucoParams)
+    # Verify if an ArUco marker is detected
+    if len(corners)> 0:
+        # flatten ID list
+        ids = ids.flatten()
+        # loop over the marker corners
+        for (markerCorner, markerID) in zip(corners, ids):
+            # extract marker corners and convert them to integers
+            corners = markerCorner.reshape((4,2))
+            (topLeft, topRight, bottomRight, bottomLeft) = corners
+            topRight = (int(topRight[0]), int(topRight[1]))
+            bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
+            bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
+            topLeft = (int(topLeft[0]), int(topLeft[1]))
+            # draw bounding box
+            cv2.line(img, topLeft, topRight, (0, 255, 0), 2)
+            cv2.line(img, topRight, bottomRight, (0, 255, 0), 2)
+            cv2.line(img, bottomRight, bottomLeft, (0, 255, 0), 2)
+            cv2.line(img, bottomLeft, topLeft, (0, 255, 0), 2)
+            # compute and draw the center (x, y)-coordinates of the ArUco marker
+            cX = int((topLeft[0] + bottomRight[0]) / 2.0)
+            cY = int((topLeft[1] + bottomRight[1]) / 2.0)
+            cv2.circle(img, (cX, cY), 4, (0, 0, 255), -1)
+            # Calculate the angle from camera to the object by using the provided formula
+            # angle = round( (57/2) * ( (cX - xCoord) / xCoord), 2 )
+            # Use pixel manipulation to determine quadrants
+            if cX > xCoord and cY < yCoord:
+                angle = 1
+            elif cX > xCoord and cY > yCoord:
+                angle = 2
+            elif cX < xCoord and cY > yCoord:
+                angle = 3
+            elif cX < xCoord and cY < yCoord:
+                angle = 0
+            # Display the ID's and angle to video feed
+            anglePrint = str(angle) + ' degrees'
+            #cv2.putText(img, str(markerID), (topLeft[0], topLeft[1] - 15), cv2.FONT_HERSHEY_SIMPLEX,0.5, (0, 255, 0), 2)
+            cv2.putText(img, anglePrint, (topRight[0], topRight[1] - 15), cv2.FONT_HERSHEY_SIMPLEX,0.5, (0, 255, 0), 2)
+            # Send the quadrant to the I2C/LED function to transmit/recieve/display
+            writeNumber(angle)
+        # display the output image
+        cv2.imshow('Image', img)
+    else:
+        # display the output image even if marker is not detected
+        cv2.imshow('Image', img)
+    # Allow user to stop video by pressing 'q'
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+# Disable camera and close video feed
+cap.release()
+cv2.destroyAllWindows()
