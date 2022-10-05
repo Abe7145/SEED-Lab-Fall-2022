@@ -1,0 +1,9 @@
+# What I understand
+
+- Create a two wheeled (maybe 3) robot 
+
+- Have the camera detect an Aruco marker and report angle between camera axis and marker (this angle needs to be signed and displays angle on LCD, do this in less then 10 seconds)
+
+- Arduino processes this angle, rotates to it using control stuff, moves toward marker given an angle specified (gonna have to upload this on day of demo)
+
+- 
