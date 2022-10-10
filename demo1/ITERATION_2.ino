@@ -84,7 +84,8 @@ void setup() {
 }
 
 void loop() {
-  
+  target_r = 2000;
+  target_l = 2000;
   RIGHT_MOTOR_MOVE();
   LEFT_MOTOR_MOVE();
 
