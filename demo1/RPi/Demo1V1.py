@@ -44,6 +44,7 @@ import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd
 #    
 #    return -1
 
+#function that reads and write to/from the arduino
 def writeNumber(variableName):
     try:
         abus.write_byte(address,variableName)
