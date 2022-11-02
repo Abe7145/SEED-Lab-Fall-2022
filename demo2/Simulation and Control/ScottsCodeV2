@@ -253,7 +253,6 @@ void RightTick() {
   if (A_CURRENT_STATE_RIGHT==B_CURRENT_STATE_RIGHT){ //if the signals are the same
 
     countRight+=1;//subract from the count
-    rightCountAccumulate ++;
     rightDirection = 1;
   }
   else {//if signals are different
