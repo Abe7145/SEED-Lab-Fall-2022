@@ -141,7 +141,8 @@ while True:
                 # Calculate the angle from camera to the object by using the provided formula
                 actAngle = round( (57/2) * ( (xCoord - cX) / xCoord), 1)
                 # Radians
-                print(tvec[0][0][2]/100)
+                dist = (tvec[0][0][2])/100
+                #print(tvec[0][0][2]/100)
                 #actAngle = actAngle * (math.pi / 180)
                  # Use pixel manipulation to determine quadrants, then send the angle corresponding to each quadrant to the arduino
                 if cX > xCoord and cY < yCoord:
@@ -155,6 +156,7 @@ while True:
                 # Display the ID's and angle
                 anglePrint = str(angle) + ' degrees'
                 actPrint = str(actAngle) + ' degrees'
+                distPrint = str(dist) + ' ft'
                 #cv2.putText(img, str(markerID), (topLeft[0], topLeft[1] - 15), cv2.FONT_HERSHEY_SIMPLEX,0.5, (0, 255, 0), 2)
                 cv2.putText(img, actPrint, (topRight[0], topRight[1] - 15), cv2.FONT_HERSHEY_SIMPLEX,0.5, (0, 255, 0), 2)
                 #writeNumber(angle)
