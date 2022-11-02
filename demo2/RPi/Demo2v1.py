@@ -141,7 +141,7 @@ while True:
                 # Calculate the angle from camera to the object by using the provided formula
                 actAngle = round( (57/2) * ( (xCoord - cX) / xCoord), 1)
                 # Radians
-                dist = ( round(tvec[0][0][2])/100 , 2) # * math.cos(actAngle)
+                dist = ( round(tvec[0][0][2])/100 , 2) # * math.cos(actAngle * (math.pi/180))
                 #print(tvec[0][0][2]/100)
                 #actAngle = actAngle * (math.pi / 180)
                  # Use pixel manipulation to determine quadrants, then send the angle corresponding to each quadrant to the arduino
