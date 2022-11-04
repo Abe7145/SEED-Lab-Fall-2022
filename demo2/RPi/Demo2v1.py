@@ -46,6 +46,12 @@ def displayLCD(flag, angle):
         try:
             #defAngle = 360
             #abus.write_byte(address,angle)
+            #gonna have to use write_i2c_block_data() to send a list of integers (as the distance in feet (ex. 3.54) ft)
+                #Recieve distance from main
+                #Convert to string
+                #Convert from string to list of integers using ASCII
+                #Send list/array to Arduino
+                #Use Arduino to recieve list
             #lcd.message = str(angle) + ' deg'
             if counter == 1:
                 lcd.message = 'Marker found! \nAngle:' + str(angle) + ' deg'
