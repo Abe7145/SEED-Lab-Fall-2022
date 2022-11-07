@@ -173,7 +173,8 @@ while True:
                 z = (tvec[0][0][2]/100)
                 y = (tvec[0][0][0]/100)
                 # Calculate the distance using z-vector of tvec and compensate for angle using trig, divide by 100 to get ft
-                distFromCamToMarker = round( math.sqrt(math.pow(z,2) + math.pow(y,2)) , 1) #* math.cos(actAngle * (math.pi/ 180)) 
+                #https://answers.opencv.org/question/161369/retrieve-yaw-pitch-roll-from-rvec/
+                distFromCamToMarker = round(z , 1) #* math.cos(actAngle * (math.pi/ 180)) 
                 # Display the ID's and angle
                 #anglePrint = str(angle) + ' degrees'
                 actPrint = str(actAngle) + ' degrees'
