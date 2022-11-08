@@ -280,7 +280,7 @@ void loop() {
           target = (256 - data);
         }
         else {
-          target = data;
+          target = -data;
         }
       }
       
