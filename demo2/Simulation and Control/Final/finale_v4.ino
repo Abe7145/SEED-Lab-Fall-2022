@@ -1,3 +1,5 @@
+// getting libraries and defining constants/variables
+
 #include <DualMC33926MotorShield.h>
 #include <Wire.h>
 #include <PID_v1.h>
@@ -117,7 +119,7 @@ const double Ki = .33;//.33
 const double Kp = 4.5;//3
 
 //C code for Arduino
-//#get the value that the pi sent to determine which quadrent(only 4 cases) it is in
+// get the value that the pi sent to determine which quadrent(only 4 cases) it is in
 //void receiveData(int byteCount) {
 //  case = wire.read(); #variable case is what quadrent or which of the 4 cases the aruco marker is at
 //}
@@ -244,7 +246,7 @@ void loop() {
       Next_State = THIRTY_DEG_ONE;
       break;
       
-    case THIRTY_DEG_ONE:
+    case THIRTY_DEG_ONE: // making cases to turn the robot a specified theta to look for marker
       time_control = millis();
       RESET();
       target += 30;
@@ -370,7 +372,7 @@ void loop() {
       Next_State = MOVE_FORWARD;
       break;
       
-    case MOVE_FORWARD:
+    case MOVE_FORWARD: // case that once aruco is detected, robot moves towards it
     
       SCOTT_MOVE();
 
