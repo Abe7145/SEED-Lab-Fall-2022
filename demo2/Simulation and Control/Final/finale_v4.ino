@@ -399,14 +399,16 @@ void loop() {
       break;
   }
 
+  // Monitoring variables
   Serial.print('\n');
   Serial.print(theta);
   Serial.print('\t');
   Serial.print(target);
   Serial.print('\t');
-  Serial.print(data);
+  Serial.print(curr_state);
   Serial.print('\t');
   Serial.print(data);
+  
   Curr_State = Next_State;
   
 }
@@ -420,20 +422,33 @@ void PI_READ(int byteCount) {
   data = Wire.read(); // receive a byte as character
   RECIEVED_DATA = 1;
   reading = 1;
-
-//  Serial.print("cum");
   
 }
 
-// instantiate index to iterate through charArray inside of the PI_WRITE loop
+// i2c interrupt handler for transmit request from PI
+void PI_WRITE() {
 
+    // Convert current_pos integer into a character array
+    // I2C wire write is only compatible with bytes
+    // the serial protocol gets confused with integers - must use a char array
+    String myNum = String(int(super_secret_code));
+    int string_length = myNum.length() + 1;
+    char charArray[string_length];
+    myNum.toCharArray(charArray, string_length);
 
-// i2c interrupt handler for request request from PI
+    // Send value to Pi
+    Wire.write(charArray[index]);
+    ++index;
+    if (index >= 3) {
+         index = 0;
+    }
 
+    request = 1;
+    
+}
 
-// Encoder interrupt
+// Encoder interrupts
 void LeftTick() {
-
 
   A_CURRENT_STATE_LEFT = digitalRead(LEFT_PIN_A);//read state of signal A
   B_CURRENT_STATE_LEFT = digitalRead(LEFT_PIN_B);//read state of signal B
@@ -464,10 +479,9 @@ void RightTick() {
   }
 }
 
+// Original demo 1 code we have reused for the PID angle control -> calculates variables neccessary for the PID angle control
 void AUSTIN_CALCULATION(){
 
-
-  
   // if statement is responsible for adhering to a sampling interval. The
   //>= Sampling_Interval means sampling intervals of Sampling_Interval
   // milliseconds
@@ -486,58 +500,7 @@ void AUSTIN_CALCULATION(){
 
 }
 
-void GLOBAL_CALCULATION(){
-
-  if ( micros() - leftMotorPrevTime <= 200000 ) {
-    if(leftCountAccumulate_f >= 10){
-      leftCountAccumulate_f = 0;
-      leftCountAccumulate_b = 0;
-      leftMotorDT = micros()-leftMotorPrevTime;
-      leftMotorPrevTime = micros();
-      leftMotorAngularVelocity = (-10.0/4.44)/(leftMotorDT*MICROS_TO_SECONDS);
-    }
-    if(leftCountAccumulate_b >= 10){
-      leftCountAccumulate_f = 0;
-      leftCountAccumulate_b = 0;
-      leftMotorDT = micros()-leftMotorPrevTime;
-      leftMotorPrevTime = micros();
-      leftMotorAngularVelocity = (10.0/4.44)/(leftMotorDT*MICROS_TO_SECONDS);
-    }
-  }
-  else {
-    leftMotorAngularVelocity = 0;
-    leftMotorPrevTime = micros();
-    leftCountAccumulate_f = 0;
-    leftCountAccumulate_b = 0;
-  }
-  
-  if ( micros() - rightMotorPrevTime <= 200000 ) {
-    if(rightCountAccumulate_f >= 10){
-      rightCountAccumulate_f = 0;
-      rightCountAccumulate_b = 0;
-      rightMotorDT = micros()-rightMotorPrevTime;
-      rightMotorPrevTime = micros();
-      rightMotorAngularVelocity = (10.0/4.44)/(rightMotorDT*MICROS_TO_SECONDS);
-    }
-    if(rightCountAccumulate_b >= 10){
-      rightCountAccumulate_f = 0;
-      rightCountAccumulate_b = 0;
-      rightMotorDT = micros()-rightMotorPrevTime;
-      rightMotorPrevTime = micros();
-      rightMotorAngularVelocity = (-10.0/4.44)/(rightMotorDT*MICROS_TO_SECONDS);
-    }
-  }
-  else {
-    rightMotorAngularVelocity = 0;
-    rightMotorPrevTime = micros();
-    rightCountAccumulate_f = 0;
-    rightCountAccumulate_b = 0;
-  }
-
-
-  
-}
-
+// Original demo 1 angle PID control algorithm -> reused because it worked well
 
 void RIGHT_MOTOR_MOVE(){
   
@@ -611,20 +574,61 @@ void LEFT_MOTOR_MOVE(){
   
 }
 
-//void RIGHT_MOTOR_MOVE(){
-//  Input1 = theta;
-//  SetPoint1 = target;
-//  pid1.Compute();
-//  md.setM1Speed( -Output1);
-//}
-//
-//void LEFT_MOTOR_MOVE(){
-//  Input2 = theta;
-//  SetPoint2 = target;
-//  pid2.Compute();
-//  md.setM2Speed( Output2);
-//}
+// This generalizes the code to make it so everyone's code in the program can use the same
+// counts from the encoders
+void GLOBAL_CALCULATION(){
 
+  if ( micros() - leftMotorPrevTime <= 200000 ) {
+    if(leftCountAccumulate_f >= 10){
+      leftCountAccumulate_f = 0;
+      leftCountAccumulate_b = 0;
+      leftMotorDT = micros()-leftMotorPrevTime;
+      leftMotorPrevTime = micros();
+      leftMotorAngularVelocity = (-10.0/4.44)/(leftMotorDT*MICROS_TO_SECONDS);
+    }
+    if(leftCountAccumulate_b >= 10){
+      leftCountAccumulate_f = 0;
+      leftCountAccumulate_b = 0;
+      leftMotorDT = micros()-leftMotorPrevTime;
+      leftMotorPrevTime = micros();
+      leftMotorAngularVelocity = (10.0/4.44)/(leftMotorDT*MICROS_TO_SECONDS);
+    }
+  }
+  else {
+    leftMotorAngularVelocity = 0;
+    leftMotorPrevTime = micros();
+    leftCountAccumulate_f = 0;
+    leftCountAccumulate_b = 0;
+  }
+  
+  if ( micros() - rightMotorPrevTime <= 200000 ) {
+    if(rightCountAccumulate_f >= 10){
+      rightCountAccumulate_f = 0;
+      rightCountAccumulate_b = 0;
+      rightMotorDT = micros()-rightMotorPrevTime;
+      rightMotorPrevTime = micros();
+      rightMotorAngularVelocity = (10.0/4.44)/(rightMotorDT*MICROS_TO_SECONDS);
+    }
+    if(rightCountAccumulate_b >= 10){
+      rightCountAccumulate_f = 0;
+      rightCountAccumulate_b = 0;
+      rightMotorDT = micros()-rightMotorPrevTime;
+      rightMotorPrevTime = micros();
+      rightMotorAngularVelocity = (-10.0/4.44)/(rightMotorDT*MICROS_TO_SECONDS);
+    }
+  }
+  else {
+    rightMotorAngularVelocity = 0;
+    rightMotorPrevTime = micros();
+    rightCountAccumulate_f = 0;
+    rightCountAccumulate_b = 0;
+  }
+
+}
+
+
+
+// Resetting the code relevant to the non-Scott calculation stuff
 void RESET() {
 
   intError_r = 0;
@@ -636,6 +640,7 @@ void RESET() {
   
 }
 
+// Resetting the code relevant to everyone's calculations
 void TOTAL_RESET() {
     theta = 0;
     target = 0;
@@ -656,30 +661,7 @@ void TOTAL_RESET() {
     leftMotorAngularVelocity = 0;
 }
 
-void PI_WRITE() {
-
-    // Convert current_pos integer into a character array
-    // I2C wire write is only compatible with bytes
-    // the serial protocol gets confused with integers - must use a char array
-    String myNum = String(int(super_secret_code));
-    int string_length = myNum.length() + 1;
-    char charArray[string_length];
-    myNum.toCharArray(charArray, string_length);
-
-    // Send value to Pi
-    Wire.write(charArray[index]);
-    ++index;
-    if (index >= 3) {
-         index = 0;
-    }
-
-    request = 1;
-    
-}
-//void PI_WRITE() {
-//  
-//}
-
+// Resetting code relevant to only Scott's calculations
 void SCOTT_RESET() {
 
   
@@ -720,6 +702,8 @@ void SCOTT_RESET() {
   
 }
 
+// Calculations neccessary for the PID move forward control
+// Figuring out stuff like current position and current angle
 void SCOTT_CALCULATION() {
 
   T = millis();
@@ -785,6 +769,7 @@ void SCOTT_CALCULATION() {
 
 }
 
+// Move the robot forward to the desired position
 void SCOTT_MOVE(){
 
   SCOTT_CALCULATION();
@@ -795,6 +780,6 @@ void SCOTT_MOVE(){
 
  
   delay(5);
-  
+
 
 }
