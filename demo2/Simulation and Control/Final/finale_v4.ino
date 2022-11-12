@@ -1,4 +1,4 @@
-// getting libraries and defining constants/variables
+// getting libraries and defining macros
 
 #include <DualMC33926MotorShield.h>
 #include <Wire.h>
@@ -24,6 +24,7 @@
 #define MOTORVOLTAGE  400
 #define FEET_TO_CM 30.48
 #define MILLIS_TO_SECONDS .001
+
 ///////////////////////////////////////////////////////////////////////////////////////
 //\\\\\\\ MOTOR 1 == RIGHT MOTOR   \\\\\\\\\\  MOTOR 2 == LEFT MOTOR \\\\\\\\\\\\\\\//
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -34,12 +35,17 @@ const int LEFT_PIN_A = 3;
 const int LEFT_PIN_B = 11;
 const int RIGHT_PIN_A = 2;
 const int RIGHT_PIN_B = 5;
-bool request = 0;
-int super_secret_code = 0;
-double big_boy_error = 0;
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+// State Machine Variables
+///////////////////////////////////////////////////////////////////////////////////////
 
 int Curr_State = 0;
 int Next_State = 0;
+bool reading = 0;
+bool RECIEVED_DATA = 0;
+double time_control = 0;
 
 // This program uses a state machine to track the encoder’s position
 // These variables store the state
@@ -48,14 +54,11 @@ bool A_CURRENT_STATE_LEFT = 0;
 bool B_CURRENT_STATE_LEFT = 0;
 bool A_CURRENT_STATE_RIGHT = 0;
 bool B_CURRENT_STATE_RIGHT = 0;
-int key = 1;
-int index = 0;
-double target_position;
 
-char char_to_send = '0';
-bool reading = 0;
-
-//These Varialbes calculate the time between encoder counts
+///////////////////////////////////////////////////////////////////////////////////////
+//  VARIABLES RELEVANT TO FORWARD POSITION MOVEMENT
+///////////////////////////////////////////////////////////////////////////////////////
+//These Variables calculate the time between encoder counts
 long leftMotorDT = 0;
 long leftMotorPrevTime = 0;
 long rightMotorDT = 0;
@@ -64,100 +67,30 @@ int leftCountAccumulate_f = 0;
 int rightCountAccumulate_f = 0;
 int leftCountAccumulate_b = 0;
 int rightCountAccumulate_b = 0;
-double count_error = 0;  
 
 //These variables store the discrete instantaneous angular velocity
 double leftMotorAngularVelocity = 0;//in 
 double rightMotorAngularVelocity = 0;
-
 double current_posLeft = 0; // current position of the motor -- position in degrees
 double current_posRight = 0; // current position of the motor -- position in degrees
 double countLeft = 0;
 double countRight = 0;
 
-double target = 0;
-double MOVE_FEET = 7;
+// These variables are responsible for the integration term of the PID
+double count_error = 0;  
+double big_boy_error = 0;
 
-double theta_r = 0;
-double intError_r = 0;
-double currMyTime_r = 0;
-double prevMyTime_r = 0;
-double prev_pos_r = 0;
-double motorVal_r = 0;
+//controller constants
+const double Kp_forwardPos = 0.29867;
+const double Ki_forwardPos = 0.0015283;
+const double Kp_forwardVelLeft = 0.1233;
+const double Kp_forwardVelRight = 0.7105;
+const double Ki_forwardVelLeft = 4.9861;
+const double Ki_forwardVelRight = 5.8075;
 
-double theta_l = 0;
-double intError_l = 0;
-double currMyTime_l = 0;
-double prevMyTime_l = 0;
-double prev_pos_l = 0;
-double motorVal_l = 0;
-
-double time_initial = 0;
-double x_pos = 0;
-double y_pos = 0;
-double theta = 0;
-double right_wheel_degrees_initial = 0;
-double left_wheel_degrees_initial = 0;
-double rightMotorVelocity = 0;
-double left_angular_velocity = 0;
-double radius = 7.4;
-double b = 31;
-const double Sampling_Interval= 10;
-int leftTnow = 0;
-int leftTprev = 0;
-int rightTnow = 0;
-int rightTprev = 0;
-
-
-double vel_error;
-double wait;
-int data;
-
-
-// Proportional controller constants
-const double Ki = .33;//.33
-const double Kp = 4.5;//3
-
-//C code for Arduino
-// get the value that the pi sent to determine which quadrent(only 4 cases) it is in
-//void receiveData(int byteCount) {
-//  case = wire.read(); #variable case is what quadrent or which of the 4 cases the aruco marker is at
-//}
-void AUSTIN_CALCULATION();
-void SCOTT_CALCULATION();
-void GLOBAL_CALCULATION();
-void MOTOR_MOVE();
-void RESET();
-void LeftTick();
-void RightTick();
-void RIGHT_MOTOR_MOVE();
-void LEFT_MOTOR_MOVE();
-void SCOTT_MOVE();
-void SCOTT_RESET();
-
-double m1_velocity = 0;
-double m2_velocity = 0;
-double m1_velocity_error = 0;
-double m2_velocity_error = 0;
-double time_initial_rotate = 0;
-double iterate = 0;
-double ki_move_forward = 5.3;//5.3,6,5.5
-double kp_move_forward = 0;//1
-double speed1;
-double speed2;
-double speed_error_left = 0;
-double speed_error_right = 0;
-double angle_multiplier = 0;
-
+// Variables responsible for the PID control calculations
 int rWheel = 74; // radius of robot wheel in mm
 double leftMotorVelocity =0;
-
-
-double time_control = 0;
-
-bool RECIEVED_DATA = 0;
-
-
 double targetInFeet = 0; // target position (feet)
 double targetVelocity = 0; //target velocity (cm/s)
 
@@ -174,30 +107,88 @@ int velocityLeftErrorTimeCurr = 0; //stores time at left velocity error update (
 int velocityRightErrorTimeCurr = 0; //stores time at right velocity error update (milliseconds)
 int velocityLeftErrorTimePrev = 0; //stores time that left velocity error was last updated (milliseconds)
 int velocityRightErrorTimePrev = 0; //stores time that right velocity error was last updated (milliseconds)
-int motorValLeft = 0; //value from -400 to 400 written to the left motor
-int motorValRight = 0; //value from -400 to 400 written to the right motor
-
-
-//controller constants
-const double Kp_forwardPos = 0.29867;
-const double Ki_forwardPos = 0.0015283;
-const double Kp_forwardVelLeft = 0.1233;
-const double Kp_forwardVelRight = 0.7105;
-const double Ki_forwardVelLeft = 4.9861;
-const double Ki_forwardVelRight = 5.8075;
-
-
-int beginTime = 0; // the time when the void setup ends
-bool start = 1; // ensures that the motors are only set to step once
-
 int Tminus1 = 0;
 int T = 0;
 
+// What we actually send to the motors
+int motorValLeft = 0; //value from -400 to 400 written to the left motor
+int motorValRight = 0; //value from -400 to 400 written to the right motor
+
+// the time when the void setup ends
+int beginTime = 0; 
+
+// ensures that the motors are only set to step once
+bool start = 1; 
+
+///////////////////////////////////////////////////////////////////////////////////////
+// These variables are responsible for the PID angle control for the first "rotate" states of our robot
+///////////////////////////////////////////////////////////////////////////////////////
+
+// These constants segregate the motor move variables into left and right motors
+// Note: I don't think isolating the motors is necessary, but we would have to change a lot of the code design to change it, and it already works well
+double theta_r = 0;
+double intError_r = 0;
+double currMyTime_r = 0;
+double prevMyTime_r = 0;
+double prev_pos_r = 0;
+double motorVal_r = 0;
+
+double theta_l = 0;
+double intError_l = 0;
+double currMyTime_l = 0;
+double prevMyTime_l = 0;
+double prev_pos_l = 0;
+double motorVal_l = 0;
+
+// These variables are responsible for the calculations relevant for the PID angle control
+double time_initial = 0;
+double x_pos = 0;
+double y_pos = 0;
+double theta = 0;
+double right_wheel_degrees_initial = 0;
+double left_wheel_degrees_initial = 0;
+double rightMotorVelocity = 0;
+double left_angular_velocity = 0;
+double radius = 7.4;
+double b = 31;
+const double Sampling_Interval= 10;
 int prevMyTime = 0; //previous loop time marker -- milliseconds 
 int currMyTime = 0; //current time marker -- milliseconds 
 
-bool pulse = 1;
 
+///////////////////////////////////////////////////////////////////////////////////////
+// ARDUINO-PI I2C communication
+///////////////////////////////////////////////////////////////////////////////////////
+int data;
+bool request = 0;
+int super_secret_code = 0;
+char char_to_send = '0';
+int index = 0;
+double target = 0;
+// super secret code is what we send from the Arduino to the PI to confirm state changes
+
+///////////////////////////////////////////////////////////////////////////////////////
+// Proportional controller constants
+///////////////////////////////////////////////////////////////////////////////////////
+const double Ki = .33;//.33
+const double Kp = 4.5;//3
+
+///////////////////////////////////////////////////////////////////////////////////////
+// Function Prototypes
+///////////////////////////////////////////////////////////////////////////////////////
+
+// There are different calculation functions because our parts worked separately, so we didn't want to
+// risk any unneccessary homogenization if they were just fine on their own
+void AUSTIN_CALCULATION(); 
+void GLOBAL_CALCULATION();
+void RESET();
+void LeftTick();
+void RightTick();
+void RIGHT_MOTOR_MOVE();
+void LEFT_MOTOR_MOVE();
+void SCOTT_CALCULATION();
+void SCOTT_MOVE();
+void SCOTT_RESET();
 
 void setup() {
 
@@ -225,17 +216,38 @@ void setup() {
 }
 
 void loop() {
+  // Calculation function that's relevant to all code
   GLOBAL_CALCULATION();
+  
+  // How we isolate Austin to Scott calculate - some variables overlap
   if ( Curr_State != 6 && Curr_State != 7 ) {
       AUSTIN_CALCULATION();
       char_to_send = '0';
   }
 
+  // Isolating calculations to left and right wheels, not just the entire robot
   theta_r = theta;
   theta_l = theta;
 
-//  Curr_State = 8;
-//  targetInFeet = 4;
+  // State machine for the entire demo
+  // explanations:
+  
+  // Start: stop state -> resets all variables
+  
+  // Thirty Deg: move robot in 30 degree increments
+  // States bounce back and forth from one and two to allow for delay in between rotations
+  
+  // Rough: use the PID angle control functions to rotate roughly to the marker -> PID is finnicky and kind of innacurate at smaller angles
+  
+  // Precision: hardcoded, slow movement that stops as soon as the robot rotates the precise amount -> makes up for finnicky PID
+  
+  // First stop and get position one: tell the PI we're ready to recieve position instead of angle
+  
+  // Get position two: actually recieve the position
+  
+  // Move forward: move forward PID control
+  
+  // Demo 2: prevents repetition of the state machine, if we want to -> relevant for demo 2 because there was only one aruco marker we needed to move to
   switch ( Curr_State ) {
     case START:
       RESET();
@@ -320,13 +332,6 @@ void loop() {
           md.setM2Speed ( 0 );
         }
       }
-      
-//      if ( abs(time_control - millis() ) >= 75 ) {
-//        pulse = !pulse;
-//        time_control = millis();
-//        md.setM2Speed ( 0 );
-//        md.setM1Speed ( 0 );
-//      }
 
       if ( abs(double(target) - theta) <= 1 ) {
         md.setM2Speed ( 0 );
@@ -651,64 +656,6 @@ void TOTAL_RESET() {
     leftMotorAngularVelocity = 0;
 }
 
-void MOTOR_MOVE() {
-  
-  
-  // forcing sampling rate to Sampling_Interval
-  if ( millis() - time_initial >= Sampling_Interval ) {
-
-    // Tracking time elapsed
-    iterate += 1;
-    time_initial_rotate = millis();
-
-    // Error term for position
-    vel_error = (MOVE_FEET*.965 - x_pos ) * 3;  
-
-    // Saturation 
-    if ( vel_error >= 5 ) {
-
-      vel_error = 5;
-      
-    }
-
-    // Error for controlling angular velocity
-    speed_error_right = (vel_error - rightMotorVelocity);
-    speed_error_left = (vel_error - leftMotorVelocity);
-
-    // Exaggerate compensation if one wheel is going faster than the other
-    if ( (rightMotorVelocity > left_angular_velocity) ) {
-      speed_error_left += abs(speed_error_right - speed_error_left) * 3;//3
-    }
-    else {
-      speed_error_right += abs(speed_error_left - speed_error_right) * 3;
-    }
-
-    // Noise error
-    if ( abs(speed_error_right) <= 1.5) { 
-      speed_error_right = 0;
-    }
-
-    if ( abs(speed_error_left) <= 1.5 ) { 
-      speed_error_left = 0;
-    }
-
-    // Calculating integral error 
-    m1_velocity += ( speed_error_right ) * Sampling_Interval * iterate / 1000;
-    m2_velocity += ( speed_error_left )  * Sampling_Interval * iterate / 1000;
-
-  }
-
-  // PID controller for position movement
-  speed1 = (vel_error * kp_move_forward + m1_velocity * ki_move_forward);
-  speed2 = (vel_error * kp_move_forward + m2_velocity * ki_move_forward);
-
-  md.setM1Speed( speed1 );
-
-  // Exponential to start the weaker wheel off quicker to match the stronger wheel
-  md.setM2Speed( speed2 * exp(1.8/(iterate)));
-
-}
-//
 void PI_WRITE() {
 
     // Convert current_pos integer into a character array
@@ -775,7 +722,6 @@ void SCOTT_RESET() {
 
 void SCOTT_CALCULATION() {
 
-
   T = millis();
   
   //if there are no encoder counts for 100ms, reset the angular velocity to 0
@@ -829,13 +775,6 @@ void SCOTT_CALCULATION() {
   //calculate motor write values
   motorValLeft = Kp_forwardVelLeft*(targetVelocity-leftMotorVelocity)+Ki_forwardVelLeft*(leftVelocityInt);
   motorValRight = Kp_forwardVelRight*(targetVelocity-rightMotorVelocity)+Ki_forwardVelRight*(rightVelocityInt);
-//
-//  if ( motorValLeft >= 250 ) {
-//    motorValLeft = 250;
-//  }
-//  if ( motorValRight >= 250 ) {
-//    motorValRight = 250;
-//  }
 
   // right is motor 1
   count_error = countRight - countLeft;
@@ -853,25 +792,9 @@ void SCOTT_MOVE(){
   md.setM1Speed(motorValRight);
   md.setM2Speed(motorValLeft);
   currMyTime = millis() - beginTime; // remove program startup time from time measurement variable
-  //Print out the necessary values
-  //Serial.print(currMyTime);
-//  Serial.print(", ");
-//  Serial.print(currMyTime);
-//  Serial.print(", ");
-//  Serial.print(motorValLeft);
-//  Serial.print(", ");
-//  Serial.print(motorValRight);
-//  Serial.print(", ");
-//  Serial.print(targetVelocity);
-//  Serial.println();
+
  
   delay(5);
   
-//  if (millis() >=15000+wait){ //stop the response after 3 seconds
-//    md.setM1Speed(0);
-//    md.setM2Speed(0);
-//    while(1);
-//    
-//  }
 
 }
