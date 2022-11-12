@@ -1,15 +1,22 @@
-// getting libraries and defining macros
+// getting libraries 
 
 #include <DualMC33926MotorShield.h>
 #include <Wire.h>
 #include <PID_v1.h>
 
+// I2C macros 
 #define SLAVE_ADDRESS 0x02
 #define PI_ADDRESS 0x20
 #define MICROS_TO_SECONDS .000001
+
+// Conversion macros
 #define DEG_TO_RAD 0.017453293
 #define MM_TO_CM 0.1
+#define MOTORVOLTAGE  400
+#define FEET_TO_CM 30.48
+#define MILLIS_TO_SECONDS .001
 
+// State machine macros
 #define START 0
 #define THIRTY_DEG_ONE 1
 #define THIRTY_DEG_TWO 2
@@ -20,10 +27,6 @@
 #define GET_POSITION_TWO 7
 #define MOVE_FORWARD 8
 #define DEMO_TWO 9
-
-#define MOTORVOLTAGE  400
-#define FEET_TO_CM 30.48
-#define MILLIS_TO_SECONDS .001
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //\\\\\\\ MOTOR 1 == RIGHT MOTOR   \\\\\\\\\\  MOTOR 2 == LEFT MOTOR \\\\\\\\\\\\\\\//
