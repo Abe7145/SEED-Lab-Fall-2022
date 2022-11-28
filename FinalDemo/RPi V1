@@ -117,11 +117,10 @@ while True:
         arucoParams = cv2.aruco.DetectorParameters_create()
         (corners, ids, rejected) = cv2.aruco.detectMarkers(img, arucoDict, parameters=arucoParams)
         # Verify if an ArUco marker is detected
-        index = 0
         ids = np.array(ids)
         ids = ids.flatten()
         for i in guidance:
-            currID = guidance(index)
+            currID = guidance(i)
 #            if currID in ids:
 #                displayLCD(flag, actAngle, distFromCamToMarker)
 #                print(actPrint)
